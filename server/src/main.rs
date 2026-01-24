@@ -19,7 +19,7 @@ fn handle_connection(mut stream: TcpStream) {
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
     let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "hello.html")
+        ("HTTP/1.1 200 OK", "words_page.html")
     } else if request_line == "POST /save HTTP/1.1" {
         ("HTTP/1.1 200 OK", "saved_page.html")
     } else {
