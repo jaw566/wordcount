@@ -1,3 +1,4 @@
 /target
 *.lock
 saved_page.html
+*.db
