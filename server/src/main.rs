@@ -8,6 +8,8 @@ use rusqlite::{
     Connection,
     params,
 };
+use lingua::{Language, LanguageDetector, LanguageDetectorBuilder};
+use lingua::Language::{English, Spanish};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
@@ -77,19 +79,33 @@ fn handle_connection(mut stream: TcpStream, conn: &mut Connection) {
         let newword = params.get("newword").unwrap();
         println!("Word: {newword}");
 
-        let _conn_res = conn.execute(
-            "INSERT INTO words (word) VALUES (?1)",
-            params![newword],
-        );
-
-        match _conn_res {
-            Ok(_conn_res) => println!("Success"),
-            Err(error) => println!("Warning: Unique words only {:?}", error),
+        let languages = vec![English, Spanish];
+        let detector: LanguageDetector = LanguageDetectorBuilder::from_languages(&languages).build();
+        let detected_language: Option<Language> = detector.detect_language_of(newword);
+        let mut save_newword: bool = false;
+        match detected_language {
+            Some(Spanish) => println!("Success: '{newword}' is Spanish!"),
+            Some(English) => println!("Warning: '{newword}' is English!"),
+            None => println!("Warning: '{newword}' is not English or Spanish!"),
         }
+        if detected_language == Some(Spanish) {
+            save_newword = true;
+        }
+        if save_newword {
+            let _conn_res = conn.execute(
+                "INSERT INTO words (word) VALUES (?1)",
+                params![newword],
+            );
 
-        let count = count_entries(&conn);
-        println!("Number of words known: {count}");
-        write_word_count_html("saved_page.html", count);
+            match _conn_res {
+                Ok(_conn_res) => println!("Success"),
+                Err(error) => println!("Warning: Unique words only {:?}", error),
+            }
+
+            let count = count_entries(&conn);
+            println!("Number of words known: {count}");
+            write_word_count_html("saved_page.html", count);
+        }
     }
 
     // Respond
