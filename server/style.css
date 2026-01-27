@@ -1,0 +1,19 @@
+.container {
+    display: flex;          /* Activates Flexbox layout */
+    justify-content: space-around; /* Distributes space around the items */
+    width: 100%;            /* Container takes full width */
+}
+
+.box {
+    flex: 1;                /* Each box grows to fill equal space */
+    padding: 20px;          /* Adds space inside the boxes */
+    margin: 10px;           /* Adds space between the boxes */
+    background-color: powderblue; /* Example background color */
+    font-weight: bold;      /* Example background color */
+    color: black;           /* Text color */
+    text-align: center;     /* Centers the text */
+    font-size: 25px;
+    border-radius: 2px;     /* Rounds the corners */
+    box-sizing: border-box; /* Ensures padding/border is included in elmnt total width */
+    border:3px solid black;
+}
