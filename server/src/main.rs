@@ -68,7 +68,7 @@ fn handle_connection(mut stream: TcpStream, conn: &mut Connection) {
         let newword = params.get("newword");
         if newword == None {
             conn.execute("DROP TABLE IF EXISTS words", ()).unwrap();
-            write_word_count_html("saved_page.html", 0);
+            write_word_count_html("saved_page.html", 0, String::from("Word count restarted!"));
         } else {
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS words (
@@ -96,12 +96,14 @@ fn detect_and_save(newword: &String, conn: &mut Connection) {
     let detector: LanguageDetector = LanguageDetectorBuilder::from_languages(&languages).build();
     let detected_language: Option<Language> = detector.detect_language_of(newword);
     let mut save_newword: bool = false;
+    let mut user_message_update: Option<String>;
 
     match detected_language {
         Some(Spanish) => {
             let confidence = detector.compute_language_confidence(newword, Spanish);
             let rounded_confidence = (confidence * 100.0).round() / 100.0;
-            println!("Success: '{newword}' is Spanish!");
+            println!("Good job! The word '{newword}' is Spanish!");
+            user_message_update = Some(format!("Good job! The word '{}' is Spanish!", newword));
             println!("Confidence value = {rounded_confidence}");
             if rounded_confidence > 0.5 {
                 save_newword = true;
@@ -109,11 +111,15 @@ fn detect_and_save(newword: &String, conn: &mut Connection) {
         }
         Some(English) => {
             println!("Warning: '{newword}' is English!");
+            user_message_update = Some(format!("Oops! The word '{}' is English!", newword));
             let confidence = detector.compute_language_confidence(newword, Spanish);
             let rounded_confidence = (confidence * 100.0).round() / 100.0;
             println!("Confidence value = {rounded_confidence}");
         }
-        None => println!("Warning: '{newword}' is not English or Spanish!"),
+        None => {
+            user_message_update = Some(format!("Uh oh! The word '{}' is not English or Spanish!", newword));
+            println!("Uh oh! The word '{newword}' is not English or Spanish!");
+        }
     }
 
     if save_newword {
@@ -123,17 +129,25 @@ fn detect_and_save(newword: &String, conn: &mut Connection) {
         );
         match _conn_res {
             Ok(_conn_res) => println!("Success"),
-            Err(error) => println!("Warning: Unique words only {:?}", error),
+            Err(error) => {
+                println!("Warning: Unique words only {:?}", error);
+                user_message_update = Some(format!("Uh oh! The word '{}' has already been counted!", newword));
+
+            }
         }
         println!("INSERTED ({:?}) to database.", newword.to_lowercase());
     }
 
     let count = count_entries(&conn);
     println!("Number of words known: {count}");
-    write_word_count_html("saved_page.html", count);
+    if user_message_update != None {
+        write_word_count_html("saved_page.html", count, user_message_update.unwrap());
+    } else {
+        write_word_count_html("saved_page.html", count, String::from("Oops...something went wrong"));
+    }
 }
 
-fn write_word_count_html(path: &str, count: i64) {
+fn write_word_count_html(path: &str, count: i64, user_message_update: String) {
     let mut file = match fs::File::create(path) {
         Ok(f) => f,
         Err(e) => {
@@ -162,6 +176,7 @@ fn write_word_count_html(path: &str, count: i64) {
         <button style="font-size:30px;" type="submit">Save</button>
       </form>
     <body>
+    <h2> {} </h2>
     <div class="container">
         <div class="box">Word count: <br><br>{}</div>
         <div class="box">Word of the day:</div>
@@ -175,6 +190,7 @@ fn write_word_count_html(path: &str, count: i64) {
     </h3>
   </body>
 </html>"#,
+        user_message_update,
         count
     ) {
         eprintln!("Failed to write HTML file '{}': {}", path, e);
