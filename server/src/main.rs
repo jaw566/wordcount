@@ -8,7 +8,7 @@ fn main() {
     let mut conn = Connection::open("words.db").unwrap();
 
     conn.execute(
-        "create table if not exists words (
+        "CREATE TABLE IF NOT EXISTS words (
             id integer primary key autoincrement,
             word text not null unique
          )",
@@ -70,6 +70,13 @@ fn handle_connection(mut stream: TcpStream, conn: &mut Connection) {
             conn.execute("DROP TABLE IF EXISTS words", ()).unwrap();
             write_word_count_html("saved_page.html", 0);
         } else {
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS words (
+                    id integer primary key autoincrement,
+                    word text not null unique
+                 )",
+                 (),
+            ).unwrap();
             detect_and_save(newword.unwrap(), conn);
             let w = newword.unwrap();
             println!("Word: {w}");
@@ -86,8 +93,7 @@ fn handle_connection(mut stream: TcpStream, conn: &mut Connection) {
 
 fn detect_and_save(newword: &String, conn: &mut Connection) {
     let languages = vec![Spanish, English];
-    let detector: LanguageDetector = 
-        LanguageDetectorBuilder::from_languages(&languages).build();
+    let detector: LanguageDetector = LanguageDetectorBuilder::from_languages(&languages).build();
     let detected_language: Option<Language> = detector.detect_language_of(newword);
     let mut save_newword: bool = false;
 
@@ -119,6 +125,7 @@ fn detect_and_save(newword: &String, conn: &mut Connection) {
             Ok(_conn_res) => println!("Success"),
             Err(error) => println!("Warning: Unique words only {:?}", error),
         }
+        println!("INSERTED ({:?}) to database.", newword.to_lowercase());
     }
 
     let count = count_entries(&conn);
