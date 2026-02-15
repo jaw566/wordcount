@@ -156,6 +156,8 @@ fn write_word_count_html(path: &str, count: i64, user_message_update: String) {
         }
     };
 
+    // background-color:powderblue;border:3px solid black;
+    
     if let Err(e) = writeln!(
         file,
         r#"<!DOCTYPE html>
@@ -164,9 +166,11 @@ fn write_word_count_html(path: &str, count: i64, user_message_update: String) {
     <meta charset="utf-8">
     <title>Word Count</title>
     <link rel="stylesheet" href="style.css">
+    <style> body {{background-color:#f5f5f5;}} </style>
   </head>
   <body>
-    <h1 style="font-weight:bold;text-align:center;background-color:powderblue;border:3px solid black;">Word Count!
+  
+    <h1 style="font-weight:bold;text-align:center;">Word Count!
     <p>Track how many words you know in a foreign language</p>
     </h1>
     <h2>Motivation: "~2000 words + rules = fluency"</h2>
